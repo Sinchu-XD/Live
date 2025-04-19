@@ -3,36 +3,32 @@ from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.cricbuzz.com"
 
-async def get_live_matches():
-    url = f"{BASE_URL}/cricket-match/live-scores"
+async def get_ipl_upcoming_matches():
+    url = f"{BASE_URL}/cricket-series/7607/indian-premier-league-2025/matches"
+    headers = {"User-Agent": "Mozilla/5.0"}
     async with httpx.AsyncClient() as client:
-        res = await client.get(url)
-    soup = BeautifulSoup(res.text, "html.parser")
-    matches = soup.select(".cb-col.cb-col-100.cb-ltst-wgt-hdr .cb-col.cb-col-100.cb-col-rt.cb-font-12")
-    match_list = []
+        res = await client.get(url, headers=headers)
 
-    for match in matches:
+    soup = BeautifulSoup(res.text, "html.parser")
+    matches = []
+
+    match_cards = soup.select(".cb-col.cb-col-100.cb-ltst-wgt-hdr .cb-col.cb-col-100.cb-mtch-blk")
+
+    for card in match_cards:
         try:
-            title = match.find("a").text.strip()
-            link = BASE_URL + match.find("a")["href"]
-            match_list.append({"title": title, "link": link})
-        except:
+            title = card.select_one(".text-bold").text.strip()
+            link = BASE_URL + card.find("a")["href"]
+            time = card.select_one(".schedule-date").text.strip()
+            teams = card.select_one(".cb-ovr-flo.cb-hmscg-tm-nm").text.strip()
+            venue = card.select_one(".cb-ovr-flo.cb-text-complete").text.strip()
+            matches.append({
+                "title": title,
+                "time": time,
+                "teams": teams,
+                "venue": venue,
+                "link": link
+            })
+        except Exception:
             continue
 
-    return match_list
-
-async def get_score_and_commentary(link):
-    async with httpx.AsyncClient() as client:
-        res = await client.get(link)
-    soup = BeautifulSoup(res.text, "html.parser")
-
-    try:
-        score = soup.select_one(".cb-font-20.text-bold").text.strip()
-        status = soup.select_one(".cb-text-live").text.strip()
-        comms = soup.select(".cb-col.cb-col-100.cb-com-ln")
-        last_ball = comms[0].text.strip() if comms else "No commentary yet."
-    except:
-        score, status, last_ball = "N/A", "Match not started or ended", "No commentary"
-
-    return score, status, last_ball
-  
+    return matches
