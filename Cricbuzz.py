@@ -15,11 +15,24 @@ def clear():
 def get_match_list():
     url = "https://cricket-live-line1.p.rapidapi.com/live-match-list"
     response = httpx.get(url, headers=headers)
+
+    # Debug print
+    print(f"🔍 Status Code: {response.status_code}")
+    print("📦 Raw JSON:", response.text[:1000])  # Limit to 1000 chars for readability
+
+    if response.status_code != 200:
+        print("❌ Failed to fetch match list.")
+        return []
+
     data = response.json()
     matches = data.get("data", [])
-    for idx, match in enumerate(matches[:5], start=1):  # show top 5
-        print(f"{idx}. {match['team1']} vs {match['team2']} - Match ID: {match['match_id']}")
+    if not matches:
+        print("⚠️ No live matches found.")
+    else:
+        for idx, match in enumerate(matches[:5], start=1):
+            print(f"{idx}. {match['team1']} vs {match['team2']} - Match ID: {match['match_id']}")
     return matches
+
 
 def fetch_live_data(match_id):
     with httpx.Client() as client:
