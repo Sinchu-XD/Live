@@ -1,5 +1,5 @@
-import asyncio
 from playwright.async_api import async_playwright
+import asyncio
 
 async def get_upcoming_ipl_matches():
     url = "https://m.cricbuzz.com/cricket-series/9237/indian-premier-league-2025/matches"
@@ -12,14 +12,21 @@ async def get_upcoming_ipl_matches():
         # Wait for the page to fully load
         await page.wait_for_load_state('load')
 
-        # Print the page content for debugging
-        page_content = await page.content()
-        print(page_content)  # Output the page content to see if matches are loaded
+        # Extract the match data
+        matches = await page.query_selector_all('a.w-full.bg-cbWhite')  # Target the anchors with the match titles
 
-        # You may want to stop here and manually inspect what elements contain match info
-
+        match_details = []
+        for match in matches:
+            title = await match.inner_text()  # Extract the match title
+            link = await match.get_attribute('href')  # Get the link to match details
+            match_details.append({'title': title, 'link': link})
+        
         await browser.close()
-        return "Page printed. Inspect the content manually for further debugging."
+        
+        if match_details:
+            return match_details
+        else:
+            return "No upcoming matches found!"
 
 # Run the function and print results
 async def main():
