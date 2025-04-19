@@ -13,30 +13,24 @@ def clear():
     os.system('clear' if os.name == 'posix' else 'cls')
 
 def get_match_list():
-    url = "https://cricket-live-line1.p.rapidapi.com/matches"
-    headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "cricket-live-line1.p.rapidapi.com"
-    }
+    url = "https://cricket-live-line1.p.rapidapi.com/liveMatches"
     response = httpx.get(url, headers=headers)
 
     print(f"🔍 Status Code: {response.status_code}")
     print("📦 Raw JSON:", response.text[:1000])
 
     if response.status_code != 200:
-        print("❌ Failed to fetch match list.")
+        print("❌ Failed to fetch live match list.")
         return []
 
     data = response.json()
-    matches = data.get("data", [])
+    matches = data.get("matches", [])
     if not matches:
-        print("⚠️ No matches found.")
+        print("⚠️ No live matches found.")
     else:
         for idx, match in enumerate(matches[:5], start=1):
-            print(f"{idx}. {match['t1']} vs {match['t2']} - Match ID: {match['id']}")
+            print(f"{idx}. {match['team1_name']} vs {match['team2_name']} - Match ID: {match['match_id']}")
     return matches
-
-
 
 def fetch_live_data(match_id):
     with httpx.Client() as client:
