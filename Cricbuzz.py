@@ -2,9 +2,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.cricbuzz.com"
-
-# IPL 2025 Series ID (as of now)
-IPL_SERIES_ID = "7607"
+IPL_SERIES_ID = "9237"  # Updated series ID for IPL 2025
 
 async def get_upcoming_ipl_matches():
     url = f"{BASE_URL}/cricket-series/{IPL_SERIES_ID}/indian-premier-league-2025/matches"
@@ -19,9 +17,9 @@ async def get_upcoming_ipl_matches():
 
     for card in match_cards:
         try:
-            status = card.select_one(".cb-text-live, .cb-text-complete, .cb-text-preview")
-            if status and "upcoming" not in status.text.lower():
-                continue
+            status = card.select_one(".cb-text-preview")
+            if not status:
+                continue  # Skip if the match is not upcoming
 
             title = card.select_one(".text-bold").text.strip()
             time = card.select_one(".schedule-date").text.strip()
@@ -36,7 +34,7 @@ async def get_upcoming_ipl_matches():
                 "teams": teams,
                 "link": link
             })
-        except:
+        except Exception:
             continue
 
     return matches
