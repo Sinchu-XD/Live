@@ -1,37 +1,73 @@
-from playwright.async_api import async_playwright
-import asyncio
+import requests
+import argparse
 
-async def get_upcoming_ipl_matches():
-    url = "https://m.cricbuzz.com/cricket-series/9237/indian-premier-league-2025/matches"
-    
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)  # Launch headless browser
-        page = await browser.new_page()
-        await page.goto(url)
-        
-        # Wait for the page to fully load
-        await page.wait_for_load_state('load')
+API_KEY = "814d366d83msh97b8ba89155c2a8p140352jsn4c9a3b3bb565"  # Replace with your actual RapidAPI Key
+API_HOST = "cricket-live-line1.p.rapidapi.com"
 
-        # Extract the match data
-        matches = await page.query_selector_all('a.w-full.bg-cbWhite')  # Target the anchors with the match titles
+HEADERS = {
+    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Host": API_HOST
+}
 
-        match_details = []
-        for match in matches:
-            title = await match.inner_text()  # Extract the match title
-            link = await match.get_attribute('href')  # Get the link to match details
-            match_details.append({'title': title, 'link': link})
-        
-        await browser.close()
-        
-        if match_details:
-            return match_details
-        else:
-            return "No upcoming matches found!"
+# ✅ Fetch Upcoming Matches
+def get_upcoming_matches():
+    url = "https://cricket-live-line1.p.rapidapi.com/matches/upcoming"
+    response = requests.get(url, headers=HEADERS)
 
-# Run the function and print results
-async def main():
-    result = await get_upcoming_ipl_matches()
-    print(result)
+    if response.status_code == 200:
+        matches = response.json()
+        print("\nUpcoming Matches:\n")
+        for i, match in enumerate(matches):
+            print(f"{i+1}. {match['team1']} vs {match['team2']} - {match['date']} | Match ID: {match['match_id']}")
+    else:
+        print(f"Failed to fetch matches. Status code: {response.status_code}")
+
+# ✅ Fetch Live Score of Match
+def get_live_score(match_id):
+    url = f"https://cricket-live-line1.p.rapidapi.com/match/{match_id}/score"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code == 200:
+        score = response.json()
+        print(f"\nLive Score for Match ID {match_id}:\n")
+        print(f"{score['team1']}: {score['team1_score']}")
+        print(f"{score['team2']}: {score['team2_score']}")
+    else:
+        print(f"Failed to fetch score. Status code: {response.status_code}")
+
+# ✅ Fetch Ball-by-Ball Commentary
+def get_live_commentary(match_id):
+    url = f"https://cricket-live-line1.p.rapidapi.com/match/{match_id}/commentary"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code == 200:
+        commentary = response.json()
+        print(f"\nLive Commentary for Match ID {match_id}:\n")
+        for ball in commentary:
+            print(f"Over {ball['over']}.{ball['ball']}: {ball['text']}")
+    else:
+        print(f"Failed to fetch commentary. Status code: {response.status_code}")
+
+# ✅ Command Line Interface
+def main():
+    parser = argparse.ArgumentParser(description="Cricket Live Line CLI Tool")
+    parser.add_argument('--test', choices=['upcoming', 'score', 'commentary'], required=True, help="What to test")
+    parser.add_argument('--match_id', type=str, help="Match ID (required for score or commentary)")
+
+    args = parser.parse_args()
+
+    if args.test == "upcoming":
+        get_upcoming_matches()
+    elif args.test == "score":
+        if not args.match_id:
+            print("❌ Please provide --match_id to fetch score.")
+            return
+        get_live_score(args.match_id)
+    elif args.test == "commentary":
+        if not args.match_id:
+            print("❌ Please provide --match_id to fetch commentary.")
+            return
+        get_live_commentary(args.match_id)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
