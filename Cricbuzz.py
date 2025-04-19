@@ -11,54 +11,20 @@ async def get_upcoming_ipl_matches():
         
         # Wait for the page to fully load
         await page.wait_for_load_state('load')
-        
+
         # Print the page content for debugging
         page_content = await page.content()
         print(page_content)  # Output the page content to see if matches are loaded
-         
-        # Scrape the upcoming matches
-        try:
-            match_elements = await page.query_selector_all('a.cb-mtch-lst-link')
-            if not match_elements:
-                print("No matches found")
-                return "No upcoming IPL matches found!"
-            
-            matches = []
-            for match in match_elements:
-                title = await match.query_selector('div.cb-col-60')
-                time = await match.query_selector('div.cb-col-33.cb-col')
 
-                title_text = await title.inner_text() if title else "Match"
-                time_text = await time.inner_text() if time else "Time"
+        # You may want to stop here and manually inspect what elements contain match info
 
-                link = await match.get_attribute('href')
-                matches.append({
-                    "title": title_text.strip(),
-                    "time": time_text.strip(),
-                    "link": f"https://m.cricbuzz.com{link}"
-                })
-            
-            await browser.close()
-            
-            return matches
-
-        except Exception as e:
-            print(f"Error: {e}")
-            await browser.close()
-            return "An error occurred while fetching the matches."
+        await browser.close()
+        return "Page printed. Inspect the content manually for further debugging."
 
 # Run the function and print results
 async def main():
-    matches = await get_upcoming_ipl_matches()
-    if isinstance(matches, list):
-        for match in matches:
-            print(f"Title: {match['title']}")
-            print(f"Time: {match['time']}")
-            print(f"Link: {match['link']}")
-            print("="*40)
-    else:
-        print(matches)
+    result = await get_upcoming_ipl_matches()
+    print(result)
 
-# Start the async function
 if __name__ == "__main__":
     asyncio.run(main())
