@@ -9,9 +9,13 @@ async def get_upcoming_ipl_matches():
         page = await browser.new_page()
         await page.goto(url)
         
-        # Ensure the page is fully loaded
+        # Wait for the page to fully load
         await page.wait_for_load_state('load')
         
+        # Print the page content for debugging
+        page_content = await page.content()
+        print(page_content)  # Output the page content to see if matches are loaded
+         
         # Scrape the upcoming matches
         try:
             match_elements = await page.query_selector_all('a.cb-mtch-lst-link')
@@ -35,7 +39,7 @@ async def get_upcoming_ipl_matches():
                 })
             
             await browser.close()
-
+            
             return matches
 
         except Exception as e:
