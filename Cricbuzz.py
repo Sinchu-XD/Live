@@ -1,73 +1,70 @@
-import requests
-import argparse
+# CricGuruBot.py
+import asyncio
+import time
+import httpx
+from pyrogram import Client, filters
 
-API_KEY = "7d3b7f92b5mshb73a3d1bff87355p1c15aajsn23b6207b41be"  # Replace with your actual RapidAPI Key
-API_HOST = "cricket-live-line1.p.rapidapi.com"
+# Initialize Telegram Bot
+app = Client("cric_guru", bot_token="YOUR_BOT_TOKEN", api_id=123456, api_hash="your_api_hash")
 
-HEADERS = {
-    "X-RapidAPI-Key": API_KEY,
-    "X-RapidAPI-Host": API_HOST
+# RapidAPI headers
+headers = {
+    "X-RapidAPI-Key": "YOUR_RAPIDAPI_KEY",
+    "X-RapidAPI-Host": "cricket-live-line1.p.rapidapi.com"
 }
 
-# ✅ Fetch Upcoming Matches
-def get_upcoming_matches():
-    url = "https://cricket-live-line1.p.rapidapi.com/matches/upcoming"
-    response = requests.get(url, headers=HEADERS)
+# Command to start live feed
+@app.on_message(filters.command("live") & filters.user(YOUR_USER_ID))  # restrict to owner
+async def live_match(client, message):
+    if len(message.command) < 2:
+        return await message.reply("Usage: `/live match_id`")
+    
+    match_id = message.command[1]
+    chat_id = message.chat.id
+    last_ball = ""
 
-    if response.status_code == 200:
-        matches = response.json()
-        print("\nUpcoming Matches:\n")
-        for i, match in enumerate(matches):
-            print(f"{i+1}. {match['team1']} vs {match['team2']} - {match['date']} | Match ID: {match['match_id']}")
-    else:
-        print(f"Failed to fetch matches. Status code: {response.status_code}")
+    await message.reply(f"Starting 🔴 *LIVE Cricket Feed* for match `{match_id}`...")
 
-# ✅ Fetch Live Score of Match
-def get_live_score(match_id):
-    url = f"https://cricket-live-line1.p.rapidapi.com/match/{match_id}/score"
-    response = requests.get(url, headers=HEADERS)
+    while True:
+        try:
+            # Fetch live score
+            async with httpx.AsyncClient() as clientx:
+                res = await clientx.get(f"https://cricket-live-line1.p.rapidapi.com/match-detail?match_id={match_id}", headers=headers)
+                data = res.json()
+            
+            score = data.get("score", "Not available")
+            overs = data.get("overs", "??")
+            striker = data.get("striker", {}).get("name", "Unknown")
+            non_striker = data.get("non_striker", {}).get("name", "Unknown")
+            batsman_scores = f"{striker} :- {data['striker']['runs']}({data['striker']['balls']})\n" \
+                             f"{non_striker} :- {data['non_striker']['runs']}({data['non_striker']['balls']})"
 
-    if response.status_code == 200:
-        score = response.json()
-        print(f"\nLive Score for Match ID {match_id}:\n")
-        print(f"{score['team1']}: {score['team1_score']}")
-        print(f"{score['team2']}: {score['team2_score']}")
-    else:
-        print(f"Failed to fetch score. Status code: {response.status_code}")
+            # Fetch commentary
+            res = await clientx.get(f"https://cricket-live-line1.p.rapidapi.com/commentary?match_id={match_id}", headers=headers)
+            commentary_data = res.json().get("commentary", [])
+            if commentary_data:
+                latest_ball = commentary_data[0].get("text", "")
+                ball_num = commentary_data[0].get("ball", "")
 
-# ✅ Fetch Ball-by-Ball Commentary
-def get_live_commentary(match_id):
-    url = f"https://cricket-live-line1.p.rapidapi.com/match/{match_id}/commentary"
-    response = requests.get(url, headers=HEADERS)
+                if latest_ball != last_ball:
+                    formatted = f"""
+{ball_num} 🎾 {score}
 
-    if response.status_code == 200:
-        commentary = response.json()
-        print(f"\nLive Commentary for Match ID {match_id}:\n")
-        for ball in commentary:
-            print(f"Over {ball['over']}.{ball['ball']}: {ball['text']}")
-    else:
-        print(f"Failed to fetch commentary. Status code: {response.status_code}")
+{striker.upper()} ON STRIKE ✔️
 
-# ✅ Command Line Interface
-def main():
-    parser = argparse.ArgumentParser(description="Cricket Live Line CLI Tool")
-    parser.add_argument('--test', choices=['upcoming', 'score', 'commentary'], required=True, help="What to test")
-    parser.add_argument('--match_id', type=str, help="Match ID (required for score or commentary)")
+🅾️ {overs} OVER 🅾️
 
-    args = parser.parse_args()
+📟 SCORECARD 📟
+{batsman_scores}
+                    """.strip()
 
-    if args.test == "upcoming":
-        get_upcoming_matches()
-    elif args.test == "score":
-        if not args.match_id:
-            print("❌ Please provide --match_id to fetch score.")
-            return
-        get_live_score(args.match_id)
-    elif args.test == "commentary":
-        if not args.match_id:
-            print("❌ Please provide --match_id to fetch commentary.")
-            return
-        get_live_commentary(args.match_id)
+                    await app.send_message(chat_id, formatted)
+                    last_ball = latest_ball
 
-if __name__ == "__main__":
-    main()
+        except Exception as e:
+            await app.send_message(chat_id, f"⚠️ Error fetching live data:\n`{e}`")
+        
+        await asyncio.sleep(10)  # every 10 seconds
+
+# Run the bot
+app.run()
