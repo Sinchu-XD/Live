@@ -23,27 +23,26 @@ async def get_upcoming_ipl_matches():
             # Split the title to get teams
             title_parts = title.split('•')
 
-            # Extract date, time, and stadium from the match's page
-            match_date = "N/A"
-            match_time = "N/A"
-            stadium = "N/A"
-
             # Go to the match details page to scrape extra information like date, time, and stadium
             await page.goto("https://m.cricbuzz.com" + link)
             await page.wait_for_load_state('load')
 
             # Extract date, time, and stadium details using 'evaluate'
-            match_date = await page.query_selector('div.dates')
-            if match_date:
-                match_date = await match_date.evaluate('el => el.innerText')
+            match_date = "N/A"
+            match_time = "N/A"
+            stadium = "N/A"
 
-            match_time = await page.query_selector('div.time')
-            if match_time:
-                match_time = await match_time.evaluate('el => el.innerText')
+            match_date_element = await page.query_selector('div.dates')
+            if match_date_element:
+                match_date = await match_date_element.evaluate('el => el.innerText')
 
-            stadium = await page.query_selector('div.stadium')
-            if stadium:
-                stadium = await stadium.evaluate('el => el.innerText')
+            match_time_element = await page.query_selector('div.time')
+            if match_time_element:
+                match_time = await match_time_element.evaluate('el => el.innerText')
+
+            stadium_element = await page.query_selector('div.stadium')
+            if stadium_element:
+                stadium = await stadium_element.evaluate('el => el.innerText')
 
             # Create match dictionary with all details
             match_details.append({
