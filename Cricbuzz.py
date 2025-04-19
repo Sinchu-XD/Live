@@ -1,7 +1,7 @@
 import requests
 import argparse
 
-API_KEY = "814d366d83msh97b8ba89155c2a8p140352jsn4c9a3b3bb565"  # Replace with your actual RapidAPI Key
+API_KEY = "7d3b7f92b5mshb73a3d1bff87355p1c15aajsn23b6207b41be"  # Replace with your actual RapidAPI Key
 API_HOST = "cricket-live-line1.p.rapidapi.com"
 
 HEADERS = {
