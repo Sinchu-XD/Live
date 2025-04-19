@@ -1,5 +1,5 @@
 import asyncio
-from cricbuzz import get_upcoming_ipl_matches
+from Cricbuzz import get_upcoming_ipl_matches
 
 async def main():
     print("✅ Testing upcoming IPL matches...\n")
