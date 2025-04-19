@@ -24,13 +24,16 @@ def get_match_list():
         return []
 
     data = response.json()
-    matches = data.get("matches", [])
+    matches = data.get("data", [])  # ✅ THIS IS THE CORRECT KEY
+
     if not matches:
         print("⚠️ No live matches found.")
     else:
         for idx, match in enumerate(matches[:5], start=1):
-            print(f"{idx}. {match['team1_name']} vs {match['team2_name']} - Match ID: {match['match_id']}")
+            print(f"{idx}. {match['team_a']} vs {match['team_b']} - Match ID: {match['match_id']}")
+
     return matches
+
 
 def fetch_live_data(match_id):
     with httpx.Client() as client:
