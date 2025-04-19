@@ -1,30 +1,41 @@
 import httpx
 from bs4 import BeautifulSoup
 
-MOBILE_URL = "https://m.cricbuzz.com/cricket-series/9237/indian-premier-league-2025/matches"
+MOBILE_SERIES_URL = "https://m.cricbuzz.com/cricket-series/9237/indian-premier-league-2025/matches"
 
 async def get_upcoming_ipl_matches():
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+
     async with httpx.AsyncClient() as client:
-        res = await client.get(MOBILE_URL, headers=headers)
+        res = await client.get(MOBILE_SERIES_URL, headers=headers)
 
     soup = BeautifulSoup(res.text, "html.parser")
     matches = []
 
-    for card in soup.select("div.match-list > div"):
-        try:
-            title = card.find("a").text.strip()
-            link = "https://m.cricbuzz.com" + card.find("a")["href"]
-            details = card.find("div", class_="schedule-date").text.strip()
+    match_blocks = soup.find_all("div", class_="cb-col cb-col-100 cb-ltst-wgt-hdr")
+
+    for block in match_blocks:
+        all_matches = block.find_all("a", href=True)
+        for a in all_matches:
+            title = a.text.strip()
+            href = a["href"]
+            if not title or "vs" not in title:
+                continue
+            link = f"https://m.cricbuzz.com{href}"
+            parent_div = a.find_parent("div")
+            time_tag = parent_div.find_next_sibling("div")
+            time = time_tag.text.strip() if time_tag else "Time not found"
+
             matches.append({
                 "title": title,
-                "time": details,
+                "time": time,
                 "link": link
             })
-        except Exception:
-            continue
 
     return matches
+
 
 
 async def get_live_score(link: str):
