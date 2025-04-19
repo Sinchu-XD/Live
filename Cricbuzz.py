@@ -8,6 +8,9 @@ async def get_upcoming_ipl_matches():
     async with httpx.AsyncClient() as client:
         r = await client.get(url, headers=headers)
 
+    # Print the raw HTML response to understand the structure
+    print(r.text)  # Add this line for debugging
+
     soup = BeautifulSoup(r.text, "html.parser")
     matches = []
 
